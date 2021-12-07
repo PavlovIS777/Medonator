@@ -30,6 +30,9 @@
 *.exe
 *.out
 *.app
+<<<<<<< HEAD
 
 # vscode folder
 /.vscode
+=======
+>>>>>>> origin/main
