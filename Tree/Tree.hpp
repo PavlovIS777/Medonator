@@ -10,6 +10,13 @@ typedef char* Data;
 #define freeData(data) 
 #endif
 
+struct Tree
+{
+    Node* head = nullptr;
+    size_t size = 0;
+}
+
+
 struct Node
 {
     Node* left;

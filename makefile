@@ -43,15 +43,12 @@ COMPFLAGS += -fsized-deallocation -fstrict-overflow
 COMPFLAGS += -flto-odr-type-merging -fno-omit-frame-pointer
 
 TREE_EXEC = Tree.out
-AKIN_OBJECTS = $(OBJDIR)/Tools.o $(OBJDIR)/Tree.o $(OBJDIR)/Akinator.o $(OBJDIR)/main.o
+AKIN_OBJECTS = $(OBJDIR)/Tools.o $(OBJDIR)/Akinator.o $(OBJDIR)/main.o
 AKIN_EXECUTABLE = akin.out
 
 akin: $(AKIN_EXECUTABLE)
 
 $(OBJDIR)/Tools.o: $(SHARED)/Tools.cpp
-	$(CC) $(OBJCOMPFLAGS) $^ -o $@
-
-$(OBJDIR)/Tree.o: $(TREE)/Tree.cpp
 	$(CC) $(OBJCOMPFLAGS) $^ -o $@
 
 $(OBJDIR)/Akinator.o: $(AKINATOR)/Akinator.cpp

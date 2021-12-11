@@ -29,3 +29,9 @@ size_t makeHash(const char* str, size_t len)
 
     return hash;
 }
+
+void skipDelims(char** string)
+{
+    while(**string == '\n' || **string == ' ')
+        ++(*string);
+}

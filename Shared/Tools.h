@@ -9,6 +9,6 @@ void* safeCalloc(size_t count, size_t size);
 
 size_t makeHash(const char* str, size_t len);
 
-
+void skipDelims(char** string);
 
 #endif //!TOOLS_H
