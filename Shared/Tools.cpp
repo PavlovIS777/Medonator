@@ -35,3 +35,8 @@ void skipDelims(char** string)
     while(**string == '\n' || **string == ' ')
         ++(*string);
 }
+
+int doubleCompare(double lhv, double rhv)
+{
+    return lhv - rhv > COMPARE_DOUBLE_EPS? 1 : 0;
+}

@@ -6,6 +6,12 @@
 #define INPUT_ANSWERS_FILE_NAME "a.txt"
 #define INPUT_QUESTIONS_FILE_NAME "q.txt"
 
+enum USER_INPUT
+{
+    NEGATIVE = 0,
+    DM_ANSWER = 1,
+    POSITIVE = 2
+};
 
 struct Question
 {
@@ -26,8 +32,8 @@ struct Answer
 {
     char* name = nullptr;
     Question* personalQuestions;
-    double q_prob;
-    size_t count;
+    size_t queCount;
+    double probability;
 };
 
 struct Akinator
@@ -47,9 +53,13 @@ void initQuestions(Akinator* akinator);
 
 Akinator* initAkinator();
 
-int getMostProbablyAnsw(Akinator* akinator);
+void sortAnswByProb(Akinator* akinator);
 
-void askQuestion(Akinator* akinator, size_t id);
+void askQuestion(Akinator* akinator);
+
+int answComparator(const void* akinAnsw1, const void* akinAnsw2);
+
+int getUserAnswer();
 
 void doAkinator(Akinator* akinator);
 #endif

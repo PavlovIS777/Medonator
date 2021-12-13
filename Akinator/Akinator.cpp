@@ -2,8 +2,18 @@
 #include "../Shared/Tools.h"
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <search.h>
 
 #define GameEvent 1
+
+int answComparator(const void* akinAnsw1, const void* akinAnsw2)
+{
+    Answer* answ1 = (Answer*)akinAnsw1;
+    Answer* answ2 = (Answer*)akinAnsw2;
+    return doubleCompare(answ2->probability, answ1->probability);
+}
 
 void initQuestions(Akinator* akinator)
 {
@@ -59,11 +69,11 @@ void parsAkinAnsws(Akinator* akinator, char* answStr)
         sscanf(answStr, "%[^/]", name);
         answStr += strlen(name) + 1;
         akinator->answers[i].name = name;
-        akinator->answers[i].count = 0;
+        akinator->answers[i].queCount = 0;
 
         double popularity = 0.0;
         sscanf(answStr, "pop:%lf,", &popularity);
-        akinator->answers[i].q_prob = popularity/(double)akinator->answCount;
+        akinator->answers[i].probability = popularity/(double)akinator->answCount;
         answStr = strchr(answStr, '{');
 
         size_t capacity = 20;
@@ -72,7 +82,7 @@ void parsAkinAnsws(Akinator* akinator, char* answStr)
         bool newAnsw = 0;
         while (!newAnsw)
         {
-            akinator->answers[i].count++;
+            akinator->answers[i].queCount++;
             size_t id = 0, y = 0, n = 0, dm = 0;
             sscanf(answStr, "{%zu, %zu, %zu, %zu}", &id, &y, &n, &dm);
             akinator->answers[i].personalQuestions[curlenansw].yes_answ = y;
@@ -100,35 +110,59 @@ Akinator* initAkinator()
     return akinator;
 }
 
-int getMostProbablyAnsw(Akinator* akinator)
-{
-    int id = 0;
-    double maxProb = 0;
-    for (size_t j = 0; j < akinator->answCount; ++j)
-        if (akinator->answers[j].q_prob > maxProb) 
-        {
-            maxProb = akinator->answers[j].q_prob;
-            id = j;
-        }
-    
-    return id;
+void sortAnswByProb(Akinator* akinator)
+{   
+    qsort(akinator->answers, akinator->answCount, sizeof(Answer), answComparator);
 }
 
-#define curId akinator->answers[id].personalQuestions[j].id
+#define curId akinator->answers[0].personalQuestions[j].id
 
-void askQuestion(Akinator* akinator, size_t id)
+void askQuestion(Akinator* akinator)
 {
     int count = 3;
-    for (size_t j = 0; j < akinator->answers[id].count && count; ++j)
+    for (size_t j = 0; j < akinator->answers[0].queCount && count; ++j)
     {
         int tmp = curId;
         if (akinator->questions[curId].isAsked == 1) {continue;}
-        printf("%s", akinator->questions[curId].question);
+        printf("%s\n", akinator->questions[curId].question);
+        int userAnswer = getUserAnswer();
+
+        switch (userAnswer)
+        {
+        case NEGATIVE:
+            akinator->answers[0].personalQuestions[j].no_answ++;
+            break;
+        case DM_ANSWER:
+            akinator->answers[0].personalQuestions[j].dm_answ++;
+            break;
+        case POSITIVE:
+            akinator->answers[0].personalQuestions[j].yes_answ++;
+            break;
+        default:
+            assert(0 && "Smells like shit");
+            break;
+        }
+
         akinator->questions[curId].isAsked = 1;
     }
+    akinator->answers[0].probability -= 0.5;
 }
 
 #undef curId
+
+int getUserAnswer()
+{
+    char* userInput;
+    scanf("%ms", &userInput);
+    size_t len = strlen(userInput);
+    for (size_t k = 0; k < len; ++k)
+        userInput[k] = tolower(userInput[k]);
+    if(!strcmp("yes", userInput)) {return POSITIVE;}
+    if(!strcmp("no", userInput)) {return NEGATIVE;}
+    if(!strcmp("dm", userInput)) {return DM_ANSWER;}
+    assert(0 && "Wrong input answer");
+}
+
 
 void doAkinator(Akinator* akinator)
 {
@@ -136,7 +170,8 @@ void doAkinator(Akinator* akinator)
     int tmp = 10;
     while(GameEvent && tmp--)
     {
-        id = getMostProbablyAnsw(akinator);
-        askQuestion(akinator, id);
+        sortAnswByProb(akinator);
+        askQuestion(akinator);
     }
+    printf("%s", akinator->answers[1].name);
 }
