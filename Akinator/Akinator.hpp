@@ -8,9 +8,9 @@
 
 enum USER_INPUT
 {
-    NEGATIVE = 0,
-    DM_ANSWER = 1,
-    POSITIVE = 2
+    NEGATIVE    = -1,
+    DM_ANSWER   = 0,
+    POSITIVE    = 1
 };
 
 struct Question
@@ -21,9 +21,22 @@ struct Question
     size_t dm_answ;
 };
 
+/*
+struct answ
+{
+    personId
+    enum 
+}
+arr_que[]
+*/
+
+
+
 struct questionDataBase
 {
     char* question;
+    size_t* answId;
+    size_t answCnt;
     size_t id;
     bool isAsked;
 };
@@ -47,7 +60,7 @@ struct Akinator
 
 void initAnwsers(Akinator* akinator);
 
-void parsAkinAnsws(Akinator* akinator, char* answStr);
+void parseAkinAnsws(Akinator* akinator, char* answStr);
 
 void initQuestions(Akinator* akinator);
 
@@ -62,4 +75,6 @@ int answComparator(const void* akinAnsw1, const void* akinAnsw2);
 int getUserAnswer();
 
 void doAkinator(Akinator* akinator);
+
+void parseAnswIdforDB(Akinator* akinator, size_t qeuId);
 #endif
