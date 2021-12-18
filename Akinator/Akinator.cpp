@@ -50,22 +50,25 @@ void parseAnswIdforDB(Akinator* akinator, size_t qeuId)
 {
     size_t answIdCnt = 10;
     size_t size = 0;
-    akinator->questions[qeuId].answId = (size_t*)safeCalloc(answIdCnt, sizeof(size_t));
+    akinator->questions[qeuId].answIds = (dictionary*)safeCalloc(answIdCnt, sizeof(dictionary));
     for (size_t i = 0; i < akinator->answCount; ++i)
     {
         for(size_t k = 0; k < akinator->answers[i].queCount; ++k)
         {
             if(akinator->answers[i].personalQuestions[k].id == qeuId)
             {
-                akinator->questions[qeuId].answId[size++] = i;
-            }
-            if (size == answIdCnt) 
-            {
-                answIdCnt *= 2;
-                realloc(akinator->questions[qeuId].answId, answIdCnt);
+                akinator->questions[qeuId].answIds[size].key = i;
+                akinator->questions[qeuId].answIds[size++].value = k;
+                break;
             }
         }
+        if (size >= answIdCnt) 
+            {
+                answIdCnt *= 2;
+                realloc(akinator->questions[qeuId].answIds, answIdCnt*sizeof(dictionary));
+            }
     }
+    realloc(akinator->questions[qeuId].answIds, size*sizeof(dictionary));
     akinator->questions[qeuId].answCnt = size;
 }
 
@@ -85,6 +88,7 @@ void parseAkinAnsws(Akinator* akinator, char* answStr)
 {
     sscanf(answStr, "%zu", &akinator->answCount);
     answStr = strchr(answStr, '\n') + 1;
+    size_t gamesCount = 0;
     akinator->answers = (Answer*)safeCalloc(akinator->answCount, sizeof(Answer));
     for (size_t i = 0; i < akinator->answCount; ++i)
     {
@@ -97,7 +101,8 @@ void parseAkinAnsws(Akinator* akinator, char* answStr)
 
         double popularity = 0.0;
         sscanf(answStr, "pop:%lf,", &popularity);
-        akinator->answers[i].probability = popularity/(double)akinator->answCount;
+        akinator->answers[i].probability = popularity;
+        gamesCount += popularity;
         answStr = strchr(answStr, '{');
 
         size_t capacity = 20;
@@ -123,6 +128,8 @@ void parseAkinAnsws(Akinator* akinator, char* answStr)
             }
         }
     }
+    for (size_t h = 0; h < akinator->answCount; ++h)
+        akinator->answers[h].probability /= gamesCount;
 }
 
 Akinator* initAkinator()
@@ -139,82 +146,68 @@ void sortAnswByProb(Akinator* akinator)
     qsort(akinator->answers, akinator->answCount, sizeof(Answer), answComparator);
 }
 
+#define answId akinator->questions[queId].answIds[i].key
+#define quePos akinator->questions[queId].answIds[i].value
+
 void incPositiveAnsw(Akinator* akinator, size_t queId)
 {
-    for (size_t i = 0; i < akinator->answCount; ++i)
+    for (size_t i = 0; i < akinator->questions[queId].answCnt; ++i)
     {
-        for (size_t k = 0; k < akinator->answers[i].queCount; ++k)
-        {
-            if (akinator->answers[i].personalQuestions[k].id == queId)
-            {
-                akinator->answers[i].personalQuestions[k].yes_answ++;
-                break;
-            }
-        }
+        akinator->answers[answId].personalQuestions[quePos].yes_answ++;
     }
 }
 
 void incNegativeAnsw(Akinator* akinator, size_t queId)
 {
-    for (size_t i = 0; i < akinator->answCount; ++i)
+    for (size_t i = 0; i < akinator->questions[queId].answCnt; ++i)
     {
-        for (size_t k = 0; k < akinator->answers[i].queCount; ++k)
-        {
-            if (akinator->answers[i].personalQuestions[k].id == queId)
-            {
-                akinator->answers[i].personalQuestions[k].no_answ++;
-                break;
-            }
-        }
+        akinator->answers[answId].personalQuestions[quePos].no_answ++;
     }
 }
 
-void incDMAnsw(Akinator* akinator, size_t queId)
+void incDmAnsw(Akinator* akinator, size_t queId)
 {
-    for (size_t i = 0; i < akinator->answCount; ++i)
+    for (size_t i = 0; i < akinator->questions[queId].answCnt; ++i)
     {
-        for (size_t k = 0; k < akinator->answers[i].queCount; ++k)
-        {
-            if (akinator->answers[i].personalQuestions[k].id == queId)
-            {
-                akinator->answers[i].personalQuestions[k].dm_answ++;
-                break;
-            }
-        }
+        akinator->answers[answId].personalQuestions[quePos].dm_answ++;
     }
 }
+#undef quePos
+#undef answId
 
-#define curId akinator->answers[0].personalQuestions[j].id
+#define curId akinator->answers[maxProbId].personalQuestions[j].id
 
-void askQuestion(Akinator* akinator)
+void askQuestion(Akinator* akinator, size_t maxProbId)
 {
     int count = 3;
-    for (size_t j = 0; j < akinator->answers[0].queCount && count--; ++j)
+    bool queshaned = 0;
+    for (size_t j = 0; j < akinator->answers[maxProbId].queCount && count--; ++j)
     {
-        int tmp = curId;
         if (akinator->questions[curId].isAsked == 1) {continue;}
+        queshaned = 1;
         printf("%s\n", akinator->questions[curId].question);
         int userAnswer = getUserAnswer();
 
         switch (userAnswer)
         {
         case NEGATIVE:
-            incNegativeAnsw(akinator, akinator->answers[0].personalQuestions[j].id);
+            incNegativeAnsw(akinator, akinator->answers[maxProbId].personalQuestions[j].id);
             break;
         case DM_ANSWER:
-            incDMAnsw(akinator, akinator->answers[0].personalQuestions[j].id);
+            incDmAnsw(akinator, akinator->answers[maxProbId].personalQuestions[j].id);
             break;
         case POSITIVE:
-            incPositiveAnsw(akinator, akinator->answers[0].personalQuestions[j].id);
+            incPositiveAnsw(akinator, akinator->answers[maxProbId].personalQuestions[j].id);
             break;
         default:
             assert(0 && "Smells like shit");
             break;
         }
-
+        recountProbability(akinator, curId, userAnswer);
         akinator->questions[curId].isAsked = 1;
     }
-    
+    if(!queshaned && maxProbId + 1 < akinator->answCount) {askQuestion(akinator, maxProbId + 1);}
+    else {return;}    
 }
 
 #undef curId
@@ -249,14 +242,67 @@ int getUserAnswer()
 }
 
 
+#define quePos akinator->questions[queId].answIds[counter].value
+#define getAnswField(enumAnsw) *(&(akinator->answers[j].personalQuestions[quePos].id) + enumAnsw+2)
+#define sumOfField akinator->answers[j].personalQuestions[quePos].yes_answ + akinator->answers[j].personalQuestions[quePos].no_answ \
+                    + akinator->answers[j].personalQuestions[quePos].dm_answ
+void recountProbability(Akinator* akinator, size_t queId, size_t enumAnsw)
+{
+    size_t counter = 0;
+    for (size_t k = 0, j = akinator->questions[queId].answIds[counter].key; k < akinator->answCount; ++k)
+    {
+        if (k == j && counter < akinator->questions[queId].answCnt)
+        {
+            double fieldVal = (double)getAnswField(enumAnsw);
+            double sum = (double)sumOfField;
+            akinator->answers[j].probability *= fieldVal/sum;
+            j = akinator->questions[queId].answIds[++counter].key;
+        } 
+        else
+        {
+            akinator->answers[k].probability *= 1.0/3;
+        }
+    }
+    printAnswrsWithProbability(akinator);
+}
+
+double normProbab(Akinator* akinator, size_t pos)
+{
+    double norm = 0;
+    for (size_t k = 0; k < akinator->answCount; ++k)
+    {
+        norm += akinator->answers[k].probability;
+    }
+    norm = 1/norm;
+    double normalizedProbab = 100*(akinator->answers[pos].probability*norm);
+    return normalizedProbab;
+}
+
+void printAnswrsWithProbability(Akinator* akinator)
+{
+    printf("===============================\n");
+    for (size_t i = 0; i < akinator->answCount; ++i)
+    {
+        printf("name: %s, prob: %lf %\n", akinator->answers[i].name, normProbab(akinator, i));
+    }
+    printf("===============================\n");
+}
+
 void doAkinator(Akinator* akinator)
 {
-    size_t id;
-    int tmp = 10;
-    while(GameEvent && tmp--)
+    size_t maxProbId = getMostProbablyAnswer(akinator);
+    size_t qCount = akinator->qCount;
+    printAnswrsWithProbability(akinator);
+    while(qCount--)
     {
-        sortAnswByProb(akinator);
-        askQuestion(akinator);
+        askQuestion(akinator, maxProbId);
+        printAnswrsWithProbability(akinator);
+        maxProbId = getMostProbablyAnswer(akinator);
+        if (normProbab(akinator, maxProbId) >= 95) 
+        {
+            printf("%s", akinator->answers[maxProbId].name);
+            return;
+        }
     }
-    printf("%s", akinator->answers[1].name);
+    printf("%s", akinator->answers[maxProbId].name);
 }

@@ -16,26 +16,23 @@ enum USER_INPUT
 struct Question
 {
     size_t id;
-    size_t yes_answ;
     size_t no_answ;
     size_t dm_answ;
+    size_t yes_answ;
 };
 
-/*
-struct answ
+struct dictionary
 {
-    personId
-    enum 
-}
-arr_que[]
-*/
+    size_t key;
+    size_t value;
+};
 
 
 
 struct questionDataBase
 {
     char* question;
-    size_t* answId;
+    dictionary* answIds;
     size_t answCnt;
     size_t id;
     bool isAsked;
@@ -68,7 +65,7 @@ Akinator* initAkinator();
 
 void sortAnswByProb(Akinator* akinator);
 
-void askQuestion(Akinator* akinator);
+void askQuestion(Akinator* akinator, size_t maxProbId);
 
 int answComparator(const void* akinAnsw1, const void* akinAnsw2);
 
@@ -77,4 +74,16 @@ int getUserAnswer();
 void doAkinator(Akinator* akinator);
 
 void parseAnswIdforDB(Akinator* akinator, size_t qeuId);
+
+void incNegativeAnsw(Akinator* akinator, size_t queId);
+
+void incDmAnsw(Akinator* akinator, size_t queId);
+
+void incPositiveAnsw(Akinator* akinator, size_t queId);
+
+void recountProbability(Akinator* akinator, size_t queId, size_t enumAnsw);
+
+void printAnswrsWithProbability(Akinator* akinator);
+
+double normProbab(Akinator* akinator, size_t pos);
 #endif
